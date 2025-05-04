@@ -11,7 +11,7 @@ from typing import Dict, List, Optional, Any, Union
 
 from mcp.server.fastmcp import FastMCP
 from azure.devops.connection import Connection
-from azure.devops.v6_0.work_item_tracking.models import JsonPatchOperation
+from azure.devops.v7_1.work_item_tracking.models import JsonPatchOperation
 from msrest.authentication import BasicAuthentication
 
 # Load environment variables from .env file
