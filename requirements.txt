@@ -1,9 +1,9 @@
 # Core MCP libraries
-mcp-python>=0.5.0
+mcp-python>=0.1.4
 mcp>=0.5.0
 
 # Azure DevOps integration
-azure-devops>=7.1.0
+azure-devops>=7.1.0b4
 msrest>=0.7.1
 
 # Environment configuration
