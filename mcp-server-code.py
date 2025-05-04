@@ -9,7 +9,7 @@ import os
 from dotenv import load_dotenv
 from typing import Dict, List, Optional, Any, Union
 
-from mcp import MCPServer, Register, Tool, Parameter
+from mcp.server.fastmcp import FastMCP
 from azure.devops.connection import Connection
 from azure.devops.v6_0.work_item_tracking.models import JsonPatchOperation
 from msrest.authentication import BasicAuthentication
@@ -34,69 +34,40 @@ connection = Connection(base_url=AZURE_DEVOPS_ORGANIZATION_URL, creds=credential
 wit_client = connection.clients.get_work_item_tracking_client()
 
 # Initialize MCP server
-mcp_server = MCPServer(
-    name="Azure DevOps Ticket Manager",
+mcp = FastMCP(
+    "Azure DevOps Ticket Manager",
     description="Create and update tickets (work items) in Azure DevOps"
 )
-register = Register(mcp_server)
 
-@register.tool
+@mcp.tool()
 def create_work_item(
-    project: str = Parameter(
-        description="The project in which to create the work item",
-        default=AZURE_DEVOPS_DEFAULT_PROJECT
-    ),
-    work_item_type: str = Parameter(
-        description="The type of work item to create (e.g., 'Bug', 'Task', 'User Story', 'Feature', 'Epic')"
-    ),
-    title: str = Parameter(
-        description="Title of the work item"
-    ),
-    description: Optional[str] = Parameter(
-        description="Description of the work item",
-        default=None
-    ),
-    assigned_to: Optional[str] = Parameter(
-        description="Email of the person to assign the work item to",
-        default=None
-    ),
-    state: Optional[str] = Parameter(
-        description="Initial state of the work item (e.g., 'New', 'Active')",
-        default=None
-    ),
-    priority: Optional[int] = Parameter(
-        description="Priority of the work item (e.g., 1, 2, 3)",
-        default=None
-    ),
-    area_path: Optional[str] = Parameter(
-        description="Area path for the work item",
-        default=None
-    ),
-    iteration_path: Optional[str] = Parameter(
-        description="Iteration path for the work item",
-        default=None
-    ),
-    tags: Optional[str] = Parameter(
-        description="Comma-separated list of tags",
-        default=None
-    )
+    project: str = AZURE_DEVOPS_DEFAULT_PROJECT,
+    work_item_type: str = None,
+    title: str = None,
+    description: Optional[str] = None,
+    assigned_to: Optional[str] = None,
+    state: Optional[str] = None,
+    priority: Optional[int] = None,
+    area_path: Optional[str] = None,
+    iteration_path: Optional[str] = None,
+    tags: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Create a new work item in Azure DevOps.
-    
+
     Example:
     Create a bug titled 'Fix login button' assigned to 'john@example.com' in the 'MyProject' project.
     """
     # Create a JSON patch document for the work item fields
     patch_document = []
-    
+
     # Add required fields
     patch_document.append({
         "op": "add",
         "path": "/fields/System.Title",
         "value": title
     })
-    
+
     # Add optional fields if provided
     if description:
         patch_document.append({
@@ -104,52 +75,52 @@ def create_work_item(
             "path": "/fields/System.Description",
             "value": description
         })
-    
+
     if assigned_to:
         patch_document.append({
             "op": "add",
             "path": "/fields/System.AssignedTo",
             "value": assigned_to
         })
-    
+
     if state:
         patch_document.append({
             "op": "add",
             "path": "/fields/System.State",
             "value": state
         })
-    
+
     if priority:
         patch_document.append({
             "op": "add",
             "path": "/fields/Microsoft.VSTS.Common.Priority",
             "value": priority
         })
-    
+
     if area_path:
         patch_document.append({
             "op": "add",
             "path": "/fields/System.AreaPath",
             "value": area_path
         })
-    
+
     if iteration_path:
         patch_document.append({
             "op": "add",
             "path": "/fields/System.IterationPath",
             "value": iteration_path
         })
-    
+
     if tags:
         patch_document.append({
             "op": "add",
             "path": "/fields/System.Tags",
             "value": tags
         })
-    
+
     # Convert to JsonPatchOperation objects
     json_patch_operations = [JsonPatchOperation(**patch) for patch in patch_document]
-    
+
     # Create the work item
     created_work_item = wit_client.create_work_item(
         document=json_patch_operations,
@@ -159,7 +130,7 @@ def create_work_item(
         bypass_rules=False,
         suppress_notifications=False
     )
-    
+
     return {
         "id": created_work_item.id,
         "url": created_work_item.url,
@@ -169,53 +140,27 @@ def create_work_item(
         "type": work_item_type
     }
 
-@register.tool
+@mcp.tool()
 def update_work_item(
-    work_item_id: int = Parameter(
-        description="ID of the work item to update"
-    ),
-    title: Optional[str] = Parameter(
-        description="New title for the work item",
-        default=None
-    ),
-    description: Optional[str] = Parameter(
-        description="New description for the work item",
-        default=None
-    ),
-    assigned_to: Optional[str] = Parameter(
-        description="Email of the person to assign the work item to",
-        default=None
-    ),
-    state: Optional[str] = Parameter(
-        description="New state of the work item (e.g., 'New', 'Active', 'Resolved', 'Closed')",
-        default=None
-    ),
-    priority: Optional[int] = Parameter(
-        description="New priority of the work item (e.g., 1, 2, 3)",
-        default=None
-    ),
-    area_path: Optional[str] = Parameter(
-        description="New area path for the work item",
-        default=None
-    ),
-    iteration_path: Optional[str] = Parameter(
-        description="New iteration path for the work item",
-        default=None
-    ),
-    tags: Optional[str] = Parameter(
-        description="Comma-separated list of tags (replaces existing tags)",
-        default=None
-    )
+    work_item_id: int,
+    title: Optional[str] = None,
+    description: Optional[str] = None,
+    assigned_to: Optional[str] = None,
+    state: Optional[str] = None,
+    priority: Optional[int] = None,
+    area_path: Optional[str] = None,
+    iteration_path: Optional[str] = None,
+    tags: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Update an existing work item in Azure DevOps.
-    
+
     Example:
     Update work item #1234 to change its state to 'Resolved' and assign it to 'jane@example.com'.
     """
     # Create a JSON patch document for the work item fields
     patch_document = []
-    
+
     # Add optional fields if provided
     if title:
         patch_document.append({
@@ -223,63 +168,63 @@ def update_work_item(
             "path": "/fields/System.Title",
             "value": title
         })
-    
+
     if description:
         patch_document.append({
             "op": "add",
             "path": "/fields/System.Description",
             "value": description
         })
-    
+
     if assigned_to:
         patch_document.append({
             "op": "add",
             "path": "/fields/System.AssignedTo",
             "value": assigned_to
         })
-    
+
     if state:
         patch_document.append({
             "op": "add",
             "path": "/fields/System.State",
             "value": state
         })
-    
+
     if priority:
         patch_document.append({
             "op": "add",
             "path": "/fields/Microsoft.VSTS.Common.Priority",
             "value": priority
         })
-    
+
     if area_path:
         patch_document.append({
             "op": "add",
             "path": "/fields/System.AreaPath",
             "value": area_path
         })
-    
+
     if iteration_path:
         patch_document.append({
             "op": "add",
             "path": "/fields/System.IterationPath",
             "value": iteration_path
         })
-    
+
     if tags:
         patch_document.append({
             "op": "add",
             "path": "/fields/System.Tags",
             "value": tags
         })
-    
+
     # Only proceed if there are fields to update
     if not patch_document:
         return {"error": "No fields provided for update"}
-    
+
     # Convert to JsonPatchOperation objects
     json_patch_operations = [JsonPatchOperation(**patch) for patch in patch_document]
-    
+
     # Update the work item
     updated_work_item = wit_client.update_work_item(
         document=json_patch_operations,
@@ -288,7 +233,7 @@ def update_work_item(
         bypass_rules=False,
         suppress_notifications=False
     )
-    
+
     return {
         "id": updated_work_item.id,
         "url": updated_work_item.url,
@@ -298,18 +243,14 @@ def update_work_item(
         "updated_by": updated_work_item.fields.get("System.ChangedBy", "")
     }
 
-@register.tool
+@mcp.tool()
 def add_work_item_comment(
-    work_item_id: int = Parameter(
-        description="ID of the work item to add a comment to"
-    ),
-    comment: str = Parameter(
-        description="Comment text to add to the work item"
-    )
+    work_item_id: int,
+    comment: str
 ) -> Dict[str, Any]:
     """
     Add a comment to an existing work item in Azure DevOps.
-    
+
     Example:
     Add a comment to work item #1234 explaining the fix that was implemented.
     """
@@ -321,10 +262,10 @@ def add_work_item_comment(
             "value": comment
         }
     ]
-    
+
     # Convert to JsonPatchOperation objects
     json_patch_operations = [JsonPatchOperation(**patch) for patch in patch_document]
-    
+
     # Add the comment
     updated_work_item = wit_client.update_work_item(
         document=json_patch_operations,
@@ -333,7 +274,7 @@ def add_work_item_comment(
         bypass_rules=False,
         suppress_notifications=False
     )
-    
+
     return {
         "id": updated_work_item.id,
         "url": updated_work_item.url,
@@ -342,21 +283,19 @@ def add_work_item_comment(
         "state": updated_work_item.fields.get("System.State", "")
     }
 
-@register.tool
+@mcp.tool()
 def get_work_item(
-    work_item_id: int = Parameter(
-        description="ID of the work item to retrieve"
-    )
+    work_item_id: int
 ) -> Dict[str, Any]:
     """
     Get details of an existing work item in Azure DevOps.
-    
+
     Example:
     Get details of work item #1234.
     """
     # Get the work item
     work_item = wit_client.get_work_item(work_item_id)
-    
+
     # Extract common fields
     result = {
         "id": work_item.id,
@@ -369,18 +308,18 @@ def get_work_item(
         "created_by": work_item.fields.get("System.CreatedBy", ""),
         "description": work_item.fields.get("System.Description", "")
     }
-    
+
     # Add other available fields
     for field_name, field_value in work_item.fields.items():
-        if field_name not in ["System.Title", "System.State", "System.WorkItemType", 
-                              "System.AssignedTo", "System.CreatedDate", "System.CreatedBy", 
+        if field_name not in ["System.Title", "System.State", "System.WorkItemType",
+                              "System.AssignedTo", "System.CreatedDate", "System.CreatedBy",
                               "System.Description"]:
             # Convert field name to a more readable format for JSON
             simple_name = field_name.split(".")[-1]
             result[simple_name] = field_value
-    
+
     return result
 
 if __name__ == "__main__":
     # Run the MCP server with stdio transport
-    mcp_server.run(transport="stdio")
+    mcp.run()

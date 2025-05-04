@@ -1,6 +1,5 @@
 # Core MCP libraries
-mcp-python>=0.1.4
-mcp>=0.5.0
+mcp>=1.2.0
 
 # Azure DevOps integration
 azure-devops>=7.1.0b4
