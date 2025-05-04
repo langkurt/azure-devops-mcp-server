@@ -6,12 +6,12 @@ in Azure DevOps through a standardized Model Context Protocol interface.
 """
 
 import os
-from dotenv import load_dotenv
-from typing import Dict, List, Optional, Any, Union
+from typing import Dict, Optional, Any
 
-from mcp.server.fastmcp import FastMCP
 from azure.devops.connection import Connection
 from azure.devops.v7_1.work_item_tracking.models import JsonPatchOperation
+from dotenv import load_dotenv
+from mcp.server.fastmcp import FastMCP
 from msrest.authentication import BasicAuthentication
 
 # Load environment variables from .env file
@@ -39,18 +39,19 @@ mcp = FastMCP(
     description="Create and update tickets (work items) in Azure DevOps"
 )
 
+
 @mcp.tool()
 def create_work_item(
-    project: str = AZURE_DEVOPS_DEFAULT_PROJECT,
-    work_item_type: str = None,
-    title: str = None,
-    description: Optional[str] = None,
-    assigned_to: Optional[str] = None,
-    state: Optional[str] = None,
-    priority: Optional[int] = None,
-    area_path: Optional[str] = None,
-    iteration_path: Optional[str] = None,
-    tags: Optional[str] = None
+        project: str = AZURE_DEVOPS_DEFAULT_PROJECT,
+        work_item_type: str = None,
+        title: str = None,
+        description: Optional[str] = None,
+        assigned_to: Optional[str] = None,
+        state: Optional[str] = None,
+        priority: Optional[int] = None,
+        area_path: Optional[str] = None,
+        iteration_path: Optional[str] = None,
+        tags: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Create a new work item in Azure DevOps.
@@ -140,17 +141,18 @@ def create_work_item(
         "type": work_item_type
     }
 
+
 @mcp.tool()
 def update_work_item(
-    work_item_id: int,
-    title: Optional[str] = None,
-    description: Optional[str] = None,
-    assigned_to: Optional[str] = None,
-    state: Optional[str] = None,
-    priority: Optional[int] = None,
-    area_path: Optional[str] = None,
-    iteration_path: Optional[str] = None,
-    tags: Optional[str] = None
+        work_item_id: int,
+        title: Optional[str] = None,
+        description: Optional[str] = None,
+        assigned_to: Optional[str] = None,
+        state: Optional[str] = None,
+        priority: Optional[int] = None,
+        area_path: Optional[str] = None,
+        iteration_path: Optional[str] = None,
+        tags: Optional[str] = None
 ) -> Dict[str, Any]:
     """
     Update an existing work item in Azure DevOps.
@@ -243,10 +245,11 @@ def update_work_item(
         "updated_by": updated_work_item.fields.get("System.ChangedBy", "")
     }
 
+
 @mcp.tool()
 def add_work_item_comment(
-    work_item_id: int,
-    comment: str
+        work_item_id: int,
+        comment: str
 ) -> Dict[str, Any]:
     """
     Add a comment to an existing work item in Azure DevOps.
@@ -283,9 +286,10 @@ def add_work_item_comment(
         "state": updated_work_item.fields.get("System.State", "")
     }
 
+
 @mcp.tool()
 def get_work_item(
-    work_item_id: int
+        work_item_id: int
 ) -> Dict[str, Any]:
     """
     Get details of an existing work item in Azure DevOps.
@@ -319,6 +323,7 @@ def get_work_item(
             result[simple_name] = field_value
 
     return result
+
 
 if __name__ == "__main__":
     # Run the MCP server with stdio transport
