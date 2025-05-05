@@ -83,7 +83,7 @@ async def build_wiql_query(project, assigned_to=None, iterations=None, work_item
 async def execute_wiql_query(query, project=None):
     """Execute a WIQL query and return the work items."""
     wiql = Wiql(query=query)
-    query_result = wit_client.query_by_wiql(wiql, project=project)
+    query_result = wit_client.query_by_wiql(wiql)
 
     if query_result.work_items:
         # Get work item IDs

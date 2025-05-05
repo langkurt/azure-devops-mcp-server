@@ -27,6 +27,9 @@ async def search_work_items(
 
     # If a custom query is provided, use it directly
     if query:
+        if "[System.TeamProject]" not in query:
+            query = query.replace("FROM WorkItems WHERE",
+                                  f"FROM WorkItems WHERE [System.TeamProject] = '{project}' AND")
         work_items = await execute_wiql_query(query, project)
     else:
         # Build filters for the query
