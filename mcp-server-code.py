@@ -60,14 +60,11 @@ def create_work_item(
     Create a bug titled 'Fix login button' assigned to 'john@example.com' in the 'MyProject' project.
     """
     # Create a JSON patch document for the work item fields
-    patch_document = []
-
-    # Add required fields
-    patch_document.append({
+    patch_document = [{
         "op": "add",
         "path": "/fields/System.Title",
         "value": title
-    })
+    }]
 
     # Add optional fields if provided
     if description:
