@@ -22,7 +22,7 @@ This MCP server specifically focuses on ticket management in Azure DevOps, enabl
 
 1. Clone this repository:
    ```bash
-   git clone https://github.com/yourusername/azure-devops-mcp-server.git
+   git clone https://github.com/langkurt/azure-devops-mcp-server.git
    cd azure-devops-mcp-server
    ```
 
@@ -48,17 +48,17 @@ You can run the MCP server in different ways:
 
 1. Development mode with the MCP Inspector:
    ```bash
-   mcp dev server.py
+   mcp dev main.py
    ```
 
 2. Install in Claude Desktop:
    ```bash
-   mcp install server.py --name "Azure DevOps Ticket Manager"
+   mcp install main.py --name "Azure DevOps Ticket Manager"
    ```
 
 3. Run directly:
    ```bash
-   python server.py
+   python main.py
    ```
 
 ### Configuring with Claude or Other AI Assistants
