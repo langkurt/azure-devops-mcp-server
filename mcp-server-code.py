@@ -134,13 +134,38 @@ async def execute_wiql_query(query, project=None):
             ids=work_item_ids,
             fields=["System.Id", "System.Title", "System.State", "System.AssignedTo",
                     "System.WorkItemType", "System.Tags", "System.IterationPath",
-                    "System.CreatedDate"]
+                    "System.CreatedDate", "Microsoft.VSTS.Scheduling.OriginalEstimate",
+                    "Microsoft.VSTS.Scheduling.RemainingWork"]
         )
 
         return work_items
 
     return []
 
+
+def process_tags(tags: Optional[str] = None, max_tags: int = 3) -> Optional[str]:
+    """
+    Process tags to ensure there are at most the maximum number allowed.
+
+    Args:
+        tags: Comma-separated list of tags
+        max_tags: Maximum number of tags to allow
+
+    Returns:
+        Processed tags string or None if input was None
+    """
+    if not tags:
+        return None
+
+    # Split tags by comma and strip whitespace
+    tag_list = [tag.strip() for tag in tags.split(',')]
+
+    # Limit to max_tags
+    if len(tag_list) > max_tags:
+        tag_list = tag_list[:max_tags]
+
+    # Join back with semicolons as per Azure DevOps tag format
+    return '; '.join(tag_list)
 
 
 @mcp.tool()
@@ -154,14 +179,24 @@ def create_work_item(
         priority: Optional[int] = None,
         area_path: Optional[str] = None,
         iteration_path: Optional[str] = None,
-        tags: Optional[str] = None
+        tags: Optional[str] = None,
+        original_estimate: Optional[float] = None,
+        remaining_work: Optional[float] = None
 ) -> Dict[str, Any]:
     """
-    Create a new work item in Azure DevOps.
+    Create a new work item in Azure DevOps with estimates.
 
     Example:
-    Create a bug titled 'Fix login button' assigned to 'john@example.com' in the 'MyProject' project.
+    Create a bug titled 'Fix login button' assigned to 'john@example.com' in the 'MyProject' project
+    with an original estimate of 4 hours and remaining work of 4 hours.
+
+    Note:
+    - Tags are limited to a maximum of 3
+    - Estimates are in hours
     """
+    # Process tags to limit to max 3
+    processed_tags = process_tags(tags, max_tags=3)
+
     # Create a JSON patch document for the work item fields
     patch_document = [{
         "op": "add",
@@ -212,11 +247,26 @@ def create_work_item(
             "value": iteration_path
         })
 
-    if tags:
+    if processed_tags:
         patch_document.append({
             "op": "add",
             "path": "/fields/System.Tags",
-            "value": tags
+            "value": processed_tags
+        })
+
+    # Add estimate fields
+    if original_estimate is not None:
+        patch_document.append({
+            "op": "add",
+            "path": "/fields/Microsoft.VSTS.Scheduling.OriginalEstimate",
+            "value": original_estimate
+        })
+
+    if remaining_work is not None:
+        patch_document.append({
+            "op": "add",
+            "path": "/fields/Microsoft.VSTS.Scheduling.RemainingWork",
+            "value": remaining_work
         })
 
     # Convert to JsonPatchOperation objects
@@ -232,7 +282,8 @@ def create_work_item(
         suppress_notifications=False
     )
 
-    return {
+    # Prepare response
+    response = {
         "id": created_work_item.id,
         "url": created_work_item.url,
         "title": created_work_item.fields["System.Title"],
@@ -240,6 +291,19 @@ def create_work_item(
         "state": created_work_item.fields.get("System.State", ""),
         "type": work_item_type
     }
+
+    # Add estimates to response if provided
+    if original_estimate is not None:
+        response["original_estimate"] = created_work_item.fields.get("Microsoft.VSTS.Scheduling.OriginalEstimate")
+
+    if remaining_work is not None:
+        response["remaining_work"] = created_work_item.fields.get("Microsoft.VSTS.Scheduling.RemainingWork")
+
+    # Add tags if provided
+    if processed_tags:
+        response["tags"] = created_work_item.fields.get("System.Tags", "")
+
+    return response
 
 
 @mcp.tool()
@@ -252,14 +316,24 @@ def update_work_item(
         priority: Optional[int] = None,
         area_path: Optional[str] = None,
         iteration_path: Optional[str] = None,
-        tags: Optional[str] = None
+        tags: Optional[str] = None,
+        original_estimate: Optional[float] = None,
+        remaining_work: Optional[float] = None
 ) -> Dict[str, Any]:
     """
-    Update an existing work item in Azure DevOps.
+    Update an existing work item in Azure DevOps, including estimates.
 
     Example:
-    Update work item #1234 to change its state to 'Resolved' and assign it to 'jane@example.com'.
+    Update work item #1234 to change its state to 'Resolved', assign it to 'jane@example.com',
+    and update remaining work to 2 hours.
+
+    Note:
+    - Tags are limited to a maximum of 3
+    - Estimates are in hours
     """
+    # Process tags to limit to max 3
+    processed_tags = process_tags(tags, max_tags=3)
+
     # Create a JSON patch document for the work item fields
     patch_document = []
 
@@ -313,11 +387,26 @@ def update_work_item(
             "value": iteration_path
         })
 
-    if tags:
+    if processed_tags:
         patch_document.append({
             "op": "add",
             "path": "/fields/System.Tags",
-            "value": tags
+            "value": processed_tags
+        })
+
+    # Add estimate fields
+    if original_estimate is not None:
+        patch_document.append({
+            "op": "add",
+            "path": "/fields/Microsoft.VSTS.Scheduling.OriginalEstimate",
+            "value": original_estimate
+        })
+
+    if remaining_work is not None:
+        patch_document.append({
+            "op": "add",
+            "path": "/fields/Microsoft.VSTS.Scheduling.RemainingWork",
+            "value": remaining_work
         })
 
     # Only proceed if there are fields to update
@@ -336,7 +425,8 @@ def update_work_item(
         suppress_notifications=False
     )
 
-    return {
+    # Prepare response
+    response = {
         "id": updated_work_item.id,
         "url": updated_work_item.url,
         "title": updated_work_item.fields.get("System.Title", ""),
@@ -344,6 +434,19 @@ def update_work_item(
         "state": updated_work_item.fields.get("System.State", ""),
         "updated_by": updated_work_item.fields.get("System.ChangedBy", "")
     }
+
+    # Add estimates to response if provided
+    if original_estimate is not None:
+        response["original_estimate"] = updated_work_item.fields.get("Microsoft.VSTS.Scheduling.OriginalEstimate")
+
+    if remaining_work is not None:
+        response["remaining_work"] = updated_work_item.fields.get("Microsoft.VSTS.Scheduling.RemainingWork")
+
+    # Add tags if provided
+    if processed_tags:
+        response["tags"] = updated_work_item.fields.get("System.Tags", "")
+
+    return response
 
 
 @mcp.tool()
@@ -410,14 +513,18 @@ def get_work_item(
         "assigned_to": work_item.fields.get("System.AssignedTo", ""),
         "created_date": work_item.fields.get("System.CreatedDate", ""),
         "created_by": work_item.fields.get("System.CreatedBy", ""),
-        "description": work_item.fields.get("System.Description", "")
+        "description": work_item.fields.get("System.Description", ""),
+        "original_estimate": work_item.fields.get("Microsoft.VSTS.Scheduling.OriginalEstimate", ""),
+        "remaining_work": work_item.fields.get("Microsoft.VSTS.Scheduling.RemainingWork", ""),
+        "tags": work_item.fields.get("System.Tags", "")
     }
 
     # Add other available fields
     for field_name, field_value in work_item.fields.items():
         if field_name not in ["System.Title", "System.State", "System.WorkItemType",
                               "System.AssignedTo", "System.CreatedDate", "System.CreatedBy",
-                              "System.Description"]:
+                              "System.Description", "Microsoft.VSTS.Scheduling.OriginalEstimate",
+                              "Microsoft.VSTS.Scheduling.RemainingWork", "System.Tags"]:
             # Convert field name to a more readable format for JSON
             simple_name = field_name.split(".")[-1]
             result[simple_name] = field_value
@@ -515,7 +622,9 @@ async def get_my_sprint_work_items(
             "type": item.fields.get("System.WorkItemType", ""),
             "iteration_path": iteration_path,
             "sprint_type": sprint_type,
-            "tags": item.fields.get("System.Tags", "")
+            "tags": item.fields.get("System.Tags", ""),
+            "original_estimate": item.fields.get("Microsoft.VSTS.Scheduling.OriginalEstimate", ""),
+            "remaining_work": item.fields.get("Microsoft.VSTS.Scheduling.RemainingWork", "")
         })
 
     return {
@@ -567,7 +676,7 @@ async def search_work_items(
             state_conditions = [f"[System.State] = '{s}'" for s in states]
             filters.append("(" + " OR ".join(state_conditions) + ")")
 
-        query = "SELECT [System.Id], [System.Title], [System.State], [System.AssignedTo], [System.WorkItemType], [System.Tags], [System.IterationPath], [System.CreatedDate] FROM WorkItems WHERE " + " AND ".join(
+        query = "SELECT [System.Id], [System.Title], [System.State], [System.AssignedTo], [System.WorkItemType], [System.Tags], [System.IterationPath], [System.CreatedDate], [Microsoft.VSTS.Scheduling.OriginalEstimate], [Microsoft.VSTS.Scheduling.RemainingWork] FROM WorkItems WHERE " + " AND ".join(
             filters) + " ORDER BY [System.Id]"
 
         work_items = await execute_wiql_query(query, project)
@@ -584,7 +693,9 @@ async def search_work_items(
                 "System.AssignedTo") else "",
             "iteration_path": item.fields.get("System.IterationPath", ""),
             "tags": item.fields.get("System.Tags", ""),
-            "created_date": item.fields.get("System.CreatedDate", "")
+            "created_date": item.fields.get("System.CreatedDate", ""),
+            "original_estimate": item.fields.get("Microsoft.VSTS.Scheduling.OriginalEstimate", ""),
+            "remaining_work": item.fields.get("Microsoft.VSTS.Scheduling.RemainingWork", "")
         })
 
     return {
@@ -596,4 +707,5 @@ async def search_work_items(
 
 if __name__ == "__main__":
     # Run the MCP server with stdio transport
+    print("Starting Azure DevOps MCP Server...")
     mcp.run()
