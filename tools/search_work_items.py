@@ -19,6 +19,16 @@ async def search_work_items(
 
     Example:
     "Find all active bugs assigned to John in the current project"
+
+     Note:
+    - When searching by iteration path, use the full path format e.g. "Engineering Sprints\\i191"
+    - For simple queries by iteration, use the iteration_path parameter, not the query parameter
+    - The query parameter expects WIQL format queries and should be used only for complex queries
+    - To find work items in a specific iteration, use: iteration_path="Engineering Sprints\\i191"
+    - To find work items assigned to the current user, use: assigned_to="@me"
+    - When searching for multiple work item types or states, provide them as a list
+    - Some valid states: ["New", "Active", "Resolved", "Closed"]
+    - Common work item types: ["Bug", "Task", "User Story", "Feature", "Epic"]
     """
     project = project or AZURE_DEVOPS_DEFAULT_PROJECT
 

@@ -30,6 +30,16 @@ def update_work_item(
     Note:
     - Tags are limited to a maximum of 3
     - Estimates are in hours
+
+     Note:
+    - Tags are limited to a maximum of 3
+    - Estimates are in hours
+    - When closing a work item, do not attempt to set remaining_work=0 directly
+    - Instead, first check the current state using get_work_item and then:
+      * If moving from 'New' or 'Active' to 'Closed', update the state first without changing remaining_work
+      * Once the state is updated to 'Closed', Azure DevOps will handle the remaining work automatically
+    - If you need to update original_estimate for a work item that has no value set, always set both
+      original_estimate and remaining_work to the same value before attempting to close the item
     """
     # Process tags to limit to max 3
     processed_tags = process_tags(tags, max_tags=3)
