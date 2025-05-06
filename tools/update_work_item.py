@@ -41,83 +41,29 @@ def update_work_item(
     - If you need to update original_estimate for a work item that has no value set, always set both
       original_estimate and remaining_work to the same value before attempting to close the item
     """
-    # Process tags to limit to max 3
-    processed_tags = process_tags(tags, max_tags=3)
+    # Define field mapping
+    field_mapping = {
+        "System.Title": title,
+        "System.Description": description,
+        "System.AssignedTo": assigned_to,
+        "System.State": state,
+        "Microsoft.VSTS.Common.Priority": priority,
+        "System.AreaPath": area_path,
+        "System.IterationPath": iteration_path,
+        "System.Tags": process_tags(tags, max_tags=3),
+        "Microsoft.VSTS.Scheduling.OriginalEstimate": original_estimate,
+        "Microsoft.VSTS.Scheduling.RemainingWork": remaining_work
+    }
 
-    # Create a JSON patch document for the work item fields
+    # Create the patch document: If a field has a value, add it to the request
     patch_document = []
-
-    # Add optional fields if provided
-    if title:
-        patch_document.append({
-            "op": "add",
-            "path": "/fields/System.Title",
-            "value": title
-        })
-
-    if description:
-        patch_document.append({
-            "op": "add",
-            "path": "/fields/System.Description",
-            "value": description
-        })
-
-    if assigned_to:
-        patch_document.append({
-            "op": "add",
-            "path": "/fields/System.AssignedTo",
-            "value": assigned_to
-        })
-
-    if state:
-        patch_document.append({
-            "op": "add",
-            "path": "/fields/System.State",
-            "value": state
-        })
-
-    if priority:
-        patch_document.append({
-            "op": "add",
-            "path": "/fields/Microsoft.VSTS.Common.Priority",
-            "value": priority
-        })
-
-    if area_path:
-        patch_document.append({
-            "op": "add",
-            "path": "/fields/System.AreaPath",
-            "value": area_path
-        })
-
-    if iteration_path:
-        patch_document.append({
-            "op": "add",
-            "path": "/fields/System.IterationPath",
-            "value": iteration_path
-        })
-
-    if processed_tags:
-        patch_document.append({
-            "op": "add",
-            "path": "/fields/System.Tags",
-            "value": processed_tags
-        })
-
-    # Add estimate fields
-    if original_estimate is not None:
-        patch_document.append({
-            "op": "add",
-            "path": "/fields/Microsoft.VSTS.Scheduling.OriginalEstimate",
-            "value": original_estimate
-        })
-
-    if remaining_work is not None:
-        patch_document.append({
-            "op": "add",
-            "path": "/fields/Microsoft.VSTS.Scheduling.RemainingWork",
-            "value": remaining_work
-        })
+    for path, value in field_mapping.items():
+        if value is not None:
+            patch_document.append({
+                "op": "add",
+                "path": f"/fields/{path}",
+                "value": value
+            })
 
     # Only proceed if there are fields to update
     if not patch_document:
@@ -135,25 +81,19 @@ def update_work_item(
         suppress_notifications=False
     )
 
-    # Prepare response
+    # Extract fields for response
+    fields = updated_work_item.fields
+
+    # Build basic response
     response = {
         "id": updated_work_item.id,
         "url": updated_work_item.url,
-        "title": updated_work_item.fields.get("System.Title", ""),
-        "assigned_to": updated_work_item.fields.get("System.AssignedTo", ""),
-        "state": updated_work_item.fields.get("System.State", ""),
-        "updated_by": updated_work_item.fields.get("System.ChangedBy", "")
+        "title": fields["System.Title"],
+        "created_by": fields.get("System.CreatedBy", ""),
+        "state": fields.get("System.State", ""),
+        "original_estimate": fields.get("Microsoft.VSTS.Scheduling.OriginalEstimate", ""),
+        "remaining_work": fields.get("Microsoft.VSTS.Scheduling.RemainingWork", ""),
+        "tags": fields.get("System.Tags", ""),
     }
-
-    # Add estimates to response if provided
-    if original_estimate is not None:
-        response["original_estimate"] = updated_work_item.fields.get("Microsoft.VSTS.Scheduling.OriginalEstimate")
-
-    if remaining_work is not None:
-        response["remaining_work"] = updated_work_item.fields.get("Microsoft.VSTS.Scheduling.RemainingWork")
-
-    # Add tags if provided
-    if processed_tags:
-        response["tags"] = updated_work_item.fields.get("System.Tags", "")
 
     return response
