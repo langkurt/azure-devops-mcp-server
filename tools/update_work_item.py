@@ -4,7 +4,7 @@ from typing import Dict, Optional, Any
 
 from azure.devops.v7_1.work_item_tracking.models import JsonPatchOperation
 from utils.config import wit_client
-from utils.helpers import process_tags
+from utils.tags import process_tags
 
 
 def update_work_item(

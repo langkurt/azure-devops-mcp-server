@@ -3,7 +3,9 @@
 from typing import Dict, List, Any
 
 from utils.config import AZURE_DEVOPS_DEFAULT_PROJECT
-from utils.helpers import get_current_user, get_team_iterations, build_wiql_query, execute_wiql_query
+from utils.user import get_current_user
+from utils.iterations import get_team_iterations
+from utils.wiql import build_wiql_query, execute_wiql_query
 
 
 async def get_my_sprint_work_items(

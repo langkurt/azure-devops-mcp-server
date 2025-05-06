@@ -3,7 +3,7 @@
 from typing import Dict, List, Any
 
 from utils.config import AZURE_DEVOPS_DEFAULT_PROJECT
-from utils.helpers import execute_wiql_query
+from utils.wiql import execute_wiql_query
 
 
 async def search_work_items(
