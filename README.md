@@ -70,7 +70,7 @@ To configure this MCP server with Claude Desktop, add the following to your Clau
   "mcpServers": {
     "azureDevOpsTickets": {
       "command": "python",
-      "args": ["path/to/server.py"],
+      "args": ["path/to/main.py"],
       "env": {
         "AZURE_DEVOPS_PAT": "your_personal_access_token",
         "AZURE_DEVOPS_ORGANIZATION_URL": "https://dev.azure.com/your-organization",
