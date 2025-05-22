@@ -7,7 +7,7 @@ on:
     branches: [main, feature/**]
 
 env:
-  IMAGE_NAME: ghcr.io/azure/mcp-server
+  IMAGE_NAME: ghcr.io/nick1200000/mcp-server
   IMAGE_TAG: v1.0.1
 
 jobs:
