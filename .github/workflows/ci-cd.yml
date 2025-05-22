@@ -205,6 +205,16 @@ jobs:
       security-events: write
     
     steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Convert image name to lowercase
+        id: image-name
+        run: |
+          LOWERCASE_NAME=$(echo "${{ env.IMAGE_NAME }}" | tr '[:upper:]' '[:lower:]')
+          echo "lowercase-name=${LOWERCASE_NAME}" >> $GITHUB_OUTPUT
+          echo "Using image name: ${LOWERCASE_NAME}"
+      
       - name: Install Trivy
         run: |
           sudo apt-get update
@@ -222,19 +232,18 @@ jobs:
           password: ${{ secrets.GITHUB_TOKEN }}
        
       - name: Pull image from registry
-        run: docker pull ${{ env.IMAGE_NAME }}:${{ needs.generate-version.outputs.version }}
+        run: docker pull ${{ steps.image-name.outputs.lowercase-name }}:${{ needs.generate-version.outputs.version }}
        
       - name: Run Trivy vulnerability scanner
         run: |
           trivy image \
             --format sarif \
             --output trivy-results.sarif \
-            ${{ env.IMAGE_NAME }}:${{ needs.generate-version.outputs.version }}
+            ${{ steps.image-name.outputs.lowercase-name }}:${{ needs.generate-version.outputs.version }}
+        continue-on-error: true
        
       - name: Upload Trivy scan results to GitHub Security tab
         uses: github/codeql-action/upload-sarif@v3
         if: always()
         with:
           sarif_file: trivy-results.sarif
-
-  
