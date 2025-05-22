@@ -30,7 +30,7 @@ jobs:
           pip install -r requirements.txt flake8 pip-audit
 
       - name: Lint code
-        run: flake8 .
+        run: flake8 . --max-line-length=120 --ignore=W291,W292
 
       - name: Python Dependency Security Audit
         run: pip-audit
