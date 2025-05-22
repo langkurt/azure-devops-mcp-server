@@ -61,7 +61,8 @@ jobs:
        
       - name: Python Dependency Security Audit
         run: pip-audit
-        continue-on-error: ${{ github.event_name == 'pull_request' }}
+        # continue-on-error: ${{ github.event_name == 'pull_request' }}
+        continue-om-error: true
 
   generate-version:
     name: Generate Version Tag
