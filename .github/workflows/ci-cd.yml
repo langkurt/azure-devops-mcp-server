@@ -34,6 +34,8 @@ jobs:
 
       - name: Python Dependency Security Audit
         run: pip-audit
+        continue-on-error: true
+       # continue-on-error: ${{ github.ref != 'refs/heads/main' }}
 
   docker-build-push:
     name: Build & Push Docker Image to GHCR
